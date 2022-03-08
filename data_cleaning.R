@@ -30,9 +30,28 @@ joined_dogs <- joined_dogs %>%
 joined_dogs <- joined_dogs %>%
   filter(Outcome_Date > Intake_Date)
 
-# Creating a copy for additional manipulation:
-dogs_filt <- joined_dogs
+# There are other issues with the intake and outcome dates.
+# > Sometimes the same intake date is repeated for numerous outcome dates, indicating it isn't updated when the dog is returned.
+# > Sometimes the same outcome date is repeated for different intake dates, indicating that the intake date was updated and outcome
+#   dates were overridden.
+# Here is how I'm going to address these problems:
+# > Group by Animal ID, arrange by intake date then outcome date, and take the earliest outcome date.
+# > This will leave me with one row per animal's visit to the shelter(s).
+# > If an animal has been there more than once, we'll have more than one row, but we will be able to see how long they were there
+#   each time before being adopted/reclaimed/transfered.
 
+# Creating a copy before additional manipulation:
+date_dogs <- joined_dogs
+
+date_dogs <- date_dogs %>%
+  group_by(Animal_ID, Intake_Date) %>%
+  arrange(Intake_Date, Outcome_Date) %>%
+  slice(1)
+
+# A new copy for remaining steps:
+dogs_filt <- date_dogs
+
+# Creating a new variable to capture age in years:
 dogs_filt <- dogs_filt %>%
   separate(`Age upon Intake`, c('IntakeAge', 'IntakeAge_Unit'), sep = ' ', extra = 'drop', fill = 'right') 
 dogs_filt$IntakeAge <- as.numeric(dogs_filt$IntakeAge)
@@ -75,7 +94,7 @@ dogs_filt <- dogs_filt %>%
   separate(`Age upon Outcome`, c('OutcomeAge', 'OutcomeAge_Unit'), sep = ' ', extra = 'drop', fill = 'right') 
 dogs_filt$OutcomeAge <- as.numeric(dogs_filt$OutcomeAge)
 # table(dogs_filt$OutcomeAge)
-# Removing the negative value, which is not possible:
+# Removing the negative value, which is not possible at outcome:
 dogs_filt <- dogs_filt %>%
   filter(OutcomeAge > 0)
 
@@ -126,50 +145,33 @@ dogs_filt <- dogs_filt %>%
 # One last copy for final changes:
 dogs <- dogs_filt
 
-# Creating an index counted by animal to track order of visits:
-# Ordering by min(Intake_Date) and min(Outcome_Date) as there are data issues!
+# Creating an index count by animal to track order and number of visits:
 dogs <- dogs %>% 
   group_by(Animal_ID) %>%
   arrange(Intake_Date, Outcome_Date) %>%
   mutate(Visit = row_number(Animal_ID))
 
-# Counting visits per dog as Instances:
-Instances_table <- dogs %>%
-  count(Animal_ID, sort = TRUE, name = "Instances")
+# Counting visits per dog as visits:
+visits_table <- dogs %>%
+  count(Animal_ID, sort = TRUE, name = "Visit")
 
 dogs <- dogs %>%
-  left_join(Instances_table, by = c('Animal_ID' = 'Animal_ID'))
-
-# I'm noticing duplicate intake/outcome rows per Animal ID.
-dups <- dogs %>%
-  select(c(Animal_ID,
-           Intake_Date,
-           Outcome_Date,
-           Outcome_Type,
-           'Outcome Subtype',
-           Instances,
-           Visit)) %>%
-  group_by(Animal_ID) %>%
-  arrange(Intake_Date, Outcome_Date) %>%
-  filter(Instances > 2)
-
-# Looks like intake date is not consistently readjusted if a dog is returned to the shelter.
-# To circumnavigate this, I'm going to create new variables with min(Intake_Date) and max(Outcome_Date) to more
-# accurately reflect the dog's entire time in "the system." The instances variable will still indictate over the course
-# of the dog's stay it was in/out. I'm going to use these new variables to calculate duration.
-
-dogs <- dogs %>%
-  group_by(Animal_ID) %>%
-  mutate(Earl_Intake_Date = min(Intake_Date)) %>%
-  mutate(Lat_Outcome_Date = max(Outcome_Date))
+  left_join(visits_table, by = c('Animal_ID' = 'Animal_ID'))
   
 # Creating a variable for duration of stay:
-dogs$Duration <- days(dogs$Lat_Outcome_Date-dogs$Earl_Intake_Date)
-summary(dogs$Duration)
+dogs$visit_duration <- days(dogs$Outcome_Date-dogs$Intake_Date)
+summary(dogs$visit_duration)
+
+# dur <- dogs %>%
+#   group_by(Animal_ID) %>%
+#   arrange(visit_duration)
   
+# Converting obey variable to an integer:
 dogs$obey <- gsub('%', '', dogs$obey)
 dogs$obey <- as.numeric(dogs$obey)
 
 # Clearing 'Unknown or uninitialised column' warning message: https://stackoverflow.com/questions/39041115/fixing-a-multiple-warning-unknown-column
 dogs <- dogs %>%
   ungroup()
+
+# write.csv(dogs, 'dogs.csv') # Exporting data for visualization

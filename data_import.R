@@ -10,7 +10,7 @@ intelligence <-
 # reps_lower: lower limit of repetitions to understand new commands
 # reps_upper: upper limit of repetitions to understand new commands
 
-breed <- read.csv("~/GitHub/pet_adoption/AKC Breed Info.csv")
+# breed <- read.csv("~/GitHub/pet_adoption/AKC Breed Info.csv")
 # Source: https://data.world/len/dog-size-intelligence-linked / http://www.petplace.com/article/dogs/selecting-a-dog/adopting-or-buying-a-dog/american-kennel-club-akc-breeds-by-size
 
 intakes <- read_excel("Austin_Animal_Center_Intakes.xlsx")

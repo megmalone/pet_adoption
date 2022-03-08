@@ -7,11 +7,8 @@ dogs <- animals %>%
             'Name',
             'Animal_Type')) %>%
   rename(Outcome_Type = 'Outcome Type') %>%
-  filter(!is.na(Outcome_DateTime)) %>%
-  filter(Outcome_Type != 'Return to Owner') %>% 
-  filter(Outcome_Type != 'Rto-Adopt') # Removed cases where the dog was returned to/formally adopted by its owner!
+  filter(!is.na(Outcome_DateTime))
 
-#### Breed ####
 # Adding a binary indicator of whether of not the dog is mixed breed:
 dogs$Mix <- ifelse(grepl('Mix', dogs$Breed) | grepl('/', dogs$Breed), 1, 0)
 # table(dogs$Mix)
@@ -248,5 +245,5 @@ dogs_int <- dogs %>%
 # Exploring missing matches:
 missing_int <- dogs_int %>%
   filter(is.na(Classification))
-table(missing_int$Breed) # Successfully fixed all but 5,072!
-
+table(missing_int$Breed) # Successfully fixed all but 6,611!
+remove(missing_int)
