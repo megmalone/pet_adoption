@@ -167,3 +167,9 @@ dogs <- dogs %>%
 dogs$Duration <- days(dogs$Lat_Outcome_Date-dogs$Earl_Intake_Date)
 summary(dogs$Duration)
   
+dogs$obey <- gsub('%', '', dogs$obey)
+dogs$obey <- as.numeric(dogs$obey)
+
+# Clearing 'Unknown or uninitialised column' warning message: https://stackoverflow.com/questions/39041115/fixing-a-multiple-warning-unknown-column
+dogs <- dogs %>%
+  ungroup()
