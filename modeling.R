@@ -105,3 +105,13 @@ print(ORtable)
 # Predicted Probabilities:
 pred_probs <- predict(clogit.model, newdata = train, type = "probs")
 print(pred_probs)
+
+# Testing on hold-out data:
+predict <- predict(clogit.model, test)
+table(test$target, predict)
+mean(as.character(test$target) != as.character(predict)) # Only 42% accuracy, not great.
+
+# What would I do next to potentially improve this model?
+# > Consider an ensemble model.
+# > Review distribution across factors.
+# > Try a more complex classification model (e.g. random forest)
