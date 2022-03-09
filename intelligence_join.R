@@ -245,5 +245,5 @@ dogs_int <- dogs %>%
 # Exploring missing matches:
 missing_int <- dogs_int %>%
   filter(is.na(Classification))
-table(missing_int$Breed) # Successfully fixed all but 6,611!
+table(missing_int$Breed) # Successfully fixed all but 3,577!
 remove(missing_int)

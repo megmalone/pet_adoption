@@ -21,6 +21,7 @@ outcomes <- read_excel("Austin_Animal_Center_Outcomes.xlsx")
 
 # colnames(intakes)
 # colnames(outcomes) # Primary Key is Animal ID
+# No ID for each intake/outcome.
 
 # Renaming the DateTime column in both datasets to distinguish
 intakes <- rename(intakes, Intake_DateTime = DateTime)
@@ -29,9 +30,21 @@ outcomes <- rename(outcomes, Outcome_DateTime = DateTime)
 intakes <- distinct(intakes)
 outcomes <- distinct(outcomes)
 
+# There is not a key to match intakes/outtakes, so I'm going to grab only the earliest instance of each animal.
+intakes <- intakes %>%
+  group_by(`Animal ID`) %>%
+  arrange(Intake_DateTime) %>%
+  slice(1)
+
+outcomes <- outcomes %>%
+  group_by(`Animal ID`) %>%
+  arrange(Outcome_DateTime) %>%
+  slice(1)
+# There are more outcomes than intakes, suggesting missing data.
+
 animals <- intakes %>%
   left_join(outcomes, by = c('Animal ID' = 'Animal ID'))
-# Why are there more rows in the combined dataset? Some animals were found and then returned/adopted more than once.
+# Why are there more rows in the combined dataset? Some animals were found and then returned/adopted more than once. Resolved above.
 
 colnames(animals)
 

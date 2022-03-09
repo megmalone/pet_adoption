@@ -5,7 +5,7 @@ library(dplyr)
 library(brant)
 
 features <- ds %>%
-  select(-c(duration_bin))
+  select(-duration_bin)
 
 # Creating dummy variables for all factors:
 dummy <- dummyVars(" ~.", features)
@@ -27,9 +27,7 @@ features <- features %>%
     Intake_TypeAbandoned,
     `Intake_TypePublic Assist`,
     Outcome_SpayNeut,
-    Visit,
     Intake_Cond_binNormal,
-    Intake_Cond_binOther,
     Intake_Cond_binSick_Injured_Pregnant_Nursing_Neonatal_Age,
     `Breed_binAustralian Cattle Dog`,
     `Breed_binBorder Collie`,
@@ -109,7 +107,7 @@ print(pred_probs)
 # Testing on hold-out data:
 predict <- predict(clogit.model, test)
 table(test$target, predict)
-mean(as.character(test$target) != as.character(predict)) # Only 42% accuracy, not great.
+mean(as.character(test$target) != as.character(predict)) # Only 43% accuracy, not great.
 
 # What would I do next to potentially improve this model?
 # > Consider an ensemble model.

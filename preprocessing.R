@@ -6,30 +6,32 @@ summary(dogs)
 # I want to try to build a model to predict the duration of a dogs stay before adoption.
 # First steps:
 # 1. Select only items where the outcome type is adoption and outcome subtype is not fostering (because that is by definition temporary).
+# 2. Using only first visits are data on subsequent visits is less reliable as already discussed.
+
+# Convert duration to integer:
+dogs$visit_duration <- as.numeric(dogs$visit_duration, 'days')
+
+# Outlier treatment:
+ggplot(dogs, aes(visit_duration)) + 
+  geom_boxplot() # Visualization confirms there are signficiant outliers
+
+outliers <-
+  boxplot.stats(dogs$visit_duration)$out # Identifies values outside of 1.5 * inter quartile range (distance between 75th and 25th)
+'%!in%' <- Negate('%in%')
+dogs <- dogs %>%
+  filter(visit_duration %!in% outliers) # Removes these outliers
+
+# write.csv(dogs, 'dogs.csv') # Exporting data for visualization
 
 dogs$`Outcome Subtype` <- dogs$`Outcome Subtype` %>%
   replace_na('NA')
 
 data <- dogs %>%
   filter(Outcome_Type == 'Adoption') %>%
-  filter(`Outcome Subtype` != 'Foster') %>%
-  filter(Visit == 1)
-
-# Convert duration to integer:
-data$visit_duration <- as.numeric(data$visit_duration, 'days')
+  filter(`Outcome Subtype` != 'Foster')
 
 ggplot(data, aes(visit_duration)) +
   geom_bar() # Super skewed! 
-
-# Outlier treatment:
-ggplot(data, aes(visit_duration)) + 
-  geom_boxplot() # Visualization confirms there are signficiant outliers
-
-outliers <-
-  boxplot.stats(data$visit_duration)$out # Identifies values outside of 1.5 * inter quartile range (distance between 75th and 25th)
-'%!in%' <- Negate('%in%')
-data <- data %>%
-  filter(visit_duration %!in% outliers) # Removes these outliers
 
 ggplot(data, aes(visit_duration)) + 
   geom_boxplot() # Visualization confirms most outliers have been removed
@@ -40,11 +42,11 @@ qqline(data$visit_duration, col = 'red', lwd = 2) # Appears very abnormal
 
 quantile(data$visit_duration)
 # 0%  25%  50%  75% 100% 
-# 1    4    6    9   29 
+# 1    4    6    9   26 
 
 # I'm going to handle this by binning the duration variable.
 data <- data %>%
-  mutate(duration_bin = cut(visit_duration, breaks = c(0, 3, 7, 14, 21, 28, 35)))
+  mutate(duration_bin = cut(visit_duration, breaks = c(0, 3, 4, 5, 6, 7, 14, 21, 28)))
 table(data$duration_bin)
 
 # Exploring feature variables:
@@ -56,24 +58,25 @@ data$Intake_Cond_bin <-
         ifelse(data$`Intake Condition` == 'Aged' | data$`Intake Condition` == 'Injured' | data$`Intake Condition` == 'Med Attn' | data$`Intake Condition` == 'Medical' | data$`Intake Condition` == 'Sick' | data$`Intake Condition` == 'Neonatal' | data$`Intake Condition` == 'Nursing' | data$`Intake Condition` == 'Pregnant', 'Sick_Injured_Pregnant_Nursing_Neonatal_Age',
                               ifelse(data$`Intake Condition` == 'Normal', 'Normal', 'Other'))
 table(data$Intake_Cond_bin)
+# Dropping 'Other' because there are only 24 instances
+data <- data %>%
+  filter(Intake_Cond_bin != 'Other')
 
 table(data$Breed)
 # I'm going to pull out top 10 and bin others.
 table(data$Breed) %>% 
   as.data.frame() %>% 
   arrange(desc(Freq))
-# 1                            Chihuahua 3456
-# 2                   Labrador Retriever 3447
-# 3       American Staffordshire Terrier 2397
-# 4                      German Shepherd 1799
-# 5                Australian Cattle Dog  974
-# 6                            Dachshund  865
-# 7                        Border Collie  563
-# 8                       Siberian Husky  544
-# 9                                Boxer  418
-# 10                              Poodle  409
-
-
+# 1                            Chihuahua 3420
+# 2                   Labrador Retriever 3367
+# 3       American Staffordshire Terrier 2297
+# 4                      German Shepherd 1762
+# 5                Australian Cattle Dog  950
+# 6                            Dachshund  863
+# 7                        Border Collie  551
+# 8                       Siberian Husky  540
+# 9                                Boxer  408
+# 10                              Poodle  408
 
 data$Breed_bin <- ifelse(data$Breed == 'Labrador Retriever', 'Labrador Retriever',
                          ifelse(data$Breed == 'Chihuahua', 'Chihuahua',
